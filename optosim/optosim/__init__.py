@@ -18,5 +18,4 @@ __version__ = _version_file.read().strip()
 
 # the following line imports all the functions from optosim.py
 from .optosim import *
-import optosim.sim_data
 import optosim.sde_solver
