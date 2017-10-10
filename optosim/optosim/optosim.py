@@ -181,7 +181,7 @@ class SimData(DataObject):
             _np.random.seed(self.seed)
         for i, freq in enumerate(self.TrapFreqArray):
             TrapOmega = freq*2*_np.pi
-            solver = sde_solver(TrapOmega, self.Gamma0, self.deltaGammaArray[i], self.mass, T0=self.T0, q0=self.q0, v0=self.v0, TimeTuple=self.TimeTuple, dt=self.dt)
+            solver = sde_solver.sde_solver(TrapOmega, self.Gamma0, self.deltaGammaArray[i], self.mass, T0=self.T0, q0=self.q0, v0=self.v0, TimeTuple=self.TimeTuple, dt=self.dt)
             self.sde_solvers.append(solver)
         #workerPool = _Pool()
         #workerPool.map(run_solve, self.sde_solvers)

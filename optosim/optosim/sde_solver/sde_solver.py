@@ -22,7 +22,9 @@ class sde_solver():
     η is the modulation depth of the cooling signal ???
     W(t) is the Wiener process
     """
-    def __init__(self, Omega0, Gamma0, deltaGamma, mass, T0=300, q0=0, v0=0, TimeTuple=[0, 100e-6], dt=1e-9, seed=None):
+    def __init__(self, Omega0, Gamma0, deltaGamma, mass,
+                 T0=300, q0=0, v0=0, alpha=0, beta=0,
+                 TimeTuple=[0, 100e-6], dt=1e-9, seed=None):
         """
         Initialises the sde_solver instance.
 
@@ -31,9 +33,9 @@ class sde_solver():
         Omega0 : float
             Trapping frequency
         Gamma0 : float
-            Enviromental damping
+            Enviromental damping - in radians/s - appears as (-Gamma*v) term in the SDE
         deltaGamma : float
-            damping due to other effects (e.g. feedback cooling)
+            damping due to other effects (e.g. feedback cooling) - in radians/s - appears as (-deltaGamma*q**2*v)*dt term in the SDE
         mass : float
             mass of nanoparticle (in Kg)
         T0 : float, optional
@@ -42,6 +44,10 @@ class sde_solver():
             initial position, defaults to 0
         v0 : float, optional
             intial velocity, defaults to 0
+        alpha : float
+            prefactor multiplying the q**3 non-linearity term shows up as ([alpha*q]**3*dt) in the SDE
+        beta : float
+            prefactor multiplying the q**5 non-linearity term shows up as ([beta*q]**5*dt) in the SDE
         TimeTuple : tuple, optional
             tuple of start and stop time for simulation / solver
         dt : float, optional
@@ -60,6 +66,8 @@ class sde_solver():
         self.deltaGamma = deltaGamma
         self.mass = mass
         self.T0 = T0
+        self.alpha = alpha
+        self.beta = beta
         self.TimeTuple = TimeTuple
         self.b_v = np.sqrt(2*self.Gamma0*self.k_B*self.T0/self.mass) # a constant
         self.dt = dt
@@ -73,6 +81,53 @@ class sde_solver():
         self.SqueezingPulseArray = np.ones(len(self.tArray)) # initialises squeezing pulse array such that there is no squeezing
         return None
 
+    def add_squeezing_pulses(self, PulseStartTime, PulseLength, TimeBetweenPulses, PulseDepth, NumberOfPulses):
+        """
+        add squeezing pulses to simulation
+
+        PulseStartTime : float
+            time at which to start pulse
+        PulseLength : float
+            duration of pulse, associated with Omega1, angular frequency 
+            of particle at lower trap power TrapPower*(1-PulseDepth)
+        TimeBetweenPulses : float
+            time duration between pulses, associated with Omega0, angular frequency 
+            of particle at higher trap power TrapPower*(1)
+        PulseDepth : float
+            normalised pulse depth - i.e. if trapping power is P power is
+            P*(1-PulseDepth) during pulse
+        NumberOfPulses : integer
+            how many squeezing pulses to perform
+
+        """
+        self.SqueezingPulseArray = generate_pulse_array(self.tArray.get_array(), PulseStartTime, PulseLength, TimeBetweenPulses, PulseDepth, NumberOfPulses)
+        return None
+
+    def add_optimal_squeezing_pulses(self, PulseStartTime, PulseDepth, NumberOfPulses):
+        """
+        add optimal squeezing pulses to simulation (Time for pulse is 1/4 of a trap
+        cycle at lower power, time between pulses is 1/4 of a trap cycle at higher
+        power.) Trap frequency during pulse is sqrt(1-PulseDepth)*TrapFrequency where
+        Trap frequency is trap frequency at higher power.
+
+        PulseStartTime : float
+            time at which to start pulse
+        PulseDepth : float
+            normalised pulse depth - i.e. if trapping power is P power is
+            P*(1-PulseDepth) during pulse
+        NumberOfPulses : integer
+            how many squeezing pulses to perform
+
+        """
+        freq0 = self.Omega0/(2*np.pi)
+        self.PulseLength = 0.25*(1/freq0)
+        Omega1 = np.sqrt(1-PulseDepth)*self.Omega0
+        freq1 = Omega1/(2*np.pi)
+        self.TimeBetweenPulses = 0.25*(1/freq1)
+        self.SqueezingPulseArray = generate_pulse_array(self.tArray.get_array(), PulseStartTime, self.PulseLength, self.TimeBetweenPulses, PulseDepth, NumberOfPulses)
+        return None
+
+    
     def generate_weiner_path(self, seed=None):
         """
         Generates random values of dW along path and populates
@@ -117,9 +172,51 @@ class sde_solver():
         """
         if NumTimeSteps == None:
             NumTimeSteps = (len(self.tArray) - 1) - startIndex
-        self.q, self.v = solve_cython(self.q, self.v, float(self.dt), self.dwArray, float(self.Gamma0),float(self.deltaGamma), float(self.Omega0), float(self.b_v), SqueezingPulseArray=self.SqueezingPulseArray, startIndex=startIndex, NumTimeSteps=NumTimeSteps)
+        self.q, self.v = solve_cython(self.q, self.v, float(self.dt), self.dwArray, float(self.Gamma0),float(self.deltaGamma), float(self.Omega0), float(self.b_v), float(self.alpha), float(self.beta), SqueezingPulseArray=self.SqueezingPulseArray, startIndex=startIndex, NumTimeSteps=NumTimeSteps)
         return self.q, self.v
 
 #def _a_v(q, v, Gamma0, Omega0, eta):
 #    return -(Gamma0 + deltaGamma)*v - Omega0**2*q
 
+
+def generate_pulse_array(tArray, PulseStartTime, T_Pulse, T_Between, PulseDepth, NoOfPulses):
+    """
+    Function for generating pulses.
+
+    Parameters
+    ----------
+    tArray : ndarray
+         array of time values
+    PulseStartTime : float
+         time at which to start pulse
+    T_Pulse : float
+         duration of pulse, associated with Omega1, angular frequency 
+         of particle at lower trap power TrapPower*(1-PulseDepth)
+    T_Between : float
+         time duration between pulses, associated with Omega0, angular frequency 
+         of particle at higher trap power TrapPower*(1)
+    PulseDepth : float
+         normalised pulse depth - i.e. if trapping power is P power is
+         P*(1-PulseDepth) during pulse
+    NoOfPulses : integer
+         how many squeezing pulses to perform
+         
+    """
+    n = 0
+    NPulsesHappened = 0
+    ValArray = np.zeros_like(tArray)
+    for n, t in enumerate(tArray):
+        if NPulsesHappened <= NoOfPulses - 1:
+            if t <= PulseStartTime:
+                ValArray[n] = 1
+            elif t > PulseStartTime and t <= PulseStartTime + T_Pulse:
+                ValArray[n] = 1 - PulseDepth
+            elif t > PulseStartTime + T_Pulse and t < T_Pulse + T_Between:
+                ValArray[n] = 1
+            else:
+                NPulsesHappened += 1
+                PulseStartTime = PulseStartTime + T_Pulse + T_Between                
+                ValArray[n] = 1
+        else:
+            ValArray[n] = 1
+    return ValArray

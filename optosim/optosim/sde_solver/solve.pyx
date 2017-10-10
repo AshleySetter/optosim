@@ -13,6 +13,8 @@ cpdef solve(np.ndarray[double, ndim=1] q,
             double deltaGamma,
             double Omega0,
             double b_v,
+            double alpha,
+            double beta,
             np.ndarray[double, ndim=1] SqueezingPulseArray,
             int startIndex,
             int NumTimeSteps ):
@@ -30,15 +32,19 @@ cpdef solve(np.ndarray[double, ndim=1] q,
     dwArray : ndarray
         random values to use for Weiner process
     Gamma0 : float
-        Enviromental damping parameter (angular frequency - radians/s)
+        Enviromental damping parameter (angular frequency - radians/s) - appears as (-Gamma*v) term in the SDE
     deltaGamma : float
-        damping due to other effects (e.g. feedback cooling) (radians/s)
+        damping due to other effects (e.g. feedback cooling) (radians/s) - appears as (-deltaGamma*q**2*v)*dt term in the SDE
     Omega0 : float
         Trapping frequency (angular frequency - radians/s)
     eta : float
         modulation depth (as a fraction)
     b_v : float
         term multiplying the Weiner process in the SDE sqrt(2*Γ0*kB*T0/m)
+    alpha : float
+        prefactor multiplying the q**3 non-linearity term shows up as ([alpha*q]**3*dt) in the SDE
+    beta : float
+        prefactor multiplying the q**5 non-linearity term shows up as ([beta*q]**5*dt) in the SDE
     SqueezingPulseArray : ndarray
         Array of values containing modulation depth of squeezing pulses (as a decimal i.e. 1 = 100%)
     startIndex : int
@@ -56,7 +62,7 @@ cpdef solve(np.ndarray[double, ndim=1] q,
     """
     cdef int n
     for n in range(startIndex, NumTimeSteps+startIndex):
-        v[n+1] = v[n] + (-(Gamma0 + deltaGamma)*v[n] - SqueezingPulseArray[n]*Omega0**2*q[n])*dt + b_v*dwArray[n]
+        v[n+1] = v[n] + (-(Gamma0 + deltaGamma*q[n]**2)*v[n] - SqueezingPulseArray[n]*Omega0**2*q[n] + (alpha*q[n])**3 - (beta*q[n])**5)*dt + b_v*dwArray[n]
         q[n+1] = q[n] + v[n]*dt
     return q, v
 
