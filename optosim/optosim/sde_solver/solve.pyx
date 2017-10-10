@@ -60,6 +60,7 @@ cpdef solve(np.ndarray[double, ndim=1] q,
     v : ndarray
         array of velocities with time found from solving the SDE
     """
+    #print(dt, Gamma0, deltaGamma, Omega0, b_v, alpha, beta)
     cdef int n
     for n in range(startIndex, NumTimeSteps+startIndex):
         v[n+1] = v[n] + (-(Gamma0 + deltaGamma*q[n]**2)*v[n] - SqueezingPulseArray[n]*Omega0**2*q[n] + (alpha*q[n])**3 - (beta*q[n])**5)*dt + b_v*dwArray[n]
