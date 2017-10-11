@@ -26,8 +26,8 @@ with open(os.path.join(mypackage_root_dir, 'optosim/VERSION')) as version_file:
     version = version_file.read().strip()
 
 extensions = [Extension(
-    name="solve",
-    sources=["optosim/sde_solver/solve.pyx"],
+    name="solveRK",
+    sources=["optosim/sde_solver/solveRK.pyx"],
     include_dirs=[numpy.get_include()],
     )
 ]

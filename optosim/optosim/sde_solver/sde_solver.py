@@ -2,7 +2,7 @@ from scipy.constants import Boltzmann
 import numpy as np
 import os
 if 'READTHEDOCS' not in os.environ:
-    from solve import solve as solve_cython
+    from solveRK import solve as solve_cython
 from frange import frange
 
 class sde_solver():
@@ -120,10 +120,10 @@ class sde_solver():
 
         """
         freq0 = self.Omega0/(2*np.pi)
-        self.PulseLength = 0.25*(1/freq0)
+        self.TimeBetweenPulses = 0.25*(1/freq0)
         Omega1 = np.sqrt(1-PulseDepth)*self.Omega0
         freq1 = Omega1/(2*np.pi)
-        self.TimeBetweenPulses = 0.25*(1/freq1)
+        self.PulseLength = 0.25*(1/freq1)
         self.SqueezingPulseArray = generate_pulse_array(self.tArray.get_array(), PulseStartTime, self.PulseLength, self.TimeBetweenPulses, PulseDepth, NumberOfPulses)
         return None
 
