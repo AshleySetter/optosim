@@ -172,7 +172,19 @@ class sde_solver():
         """
         if NumTimeSteps == None:
             NumTimeSteps = (len(self.tArray) - 1) - startIndex
-        self.q, self.v = solve_cython(self.q, self.v, float(self.dt), self.dwArray, float(self.Gamma0),float(self.deltaGamma), float(self.Omega0), float(self.b_v), float(self.alpha), float(self.beta), SqueezingPulseArray=self.SqueezingPulseArray, startIndex=startIndex, NumTimeSteps=NumTimeSteps)
+        self.q, self.v = solve_cython(self.q,
+                                      self.v,
+                                      float(self.dt),
+                                      self.dwArray,
+                                      float(self.Gamma0),
+                                      float(self.deltaGamma),
+                                      float(self.Omega0),
+                                      float(self.b_v),
+                                      float(self.alpha),
+                                      float(self.beta),                                      
+                                      SqueezingPulseArray=self.SqueezingPulseArray,
+                                      startIndex=startIndex,
+                                      NumTimeSteps=NumTimeSteps)
         return self.q, self.v
 
 #def _a_v(q, v, Gamma0, Omega0, eta):
