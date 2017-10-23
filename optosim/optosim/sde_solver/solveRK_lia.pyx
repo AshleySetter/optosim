@@ -1,6 +1,22 @@
 cimport numpy as np
 cimport cython
 
+def get_z_n(n, z):
+    cdef float z_n
+    if n < 0:
+        z_n = 0
+    else:
+        z_n = z[n]
+    return z_n
+
+def get_I_n_plus_1(In, n, M, Omega0, dt):
+    cdef float In_p1
+    In_p1 = In + get_z_n(n)*np.exp(-1j*Omega0*n*dt)*dt - get_z_n(n-M)*np.exp(-1j*Omega0*(n-M)*dt)*dt
+    return In_p1
+
+def calc_zw0_n(n, In, Omega0, dt):
+    zw0_n = np.exp(1j*Omega0*n*dt)*(1/dt)*In
+    return zw0_n
 
 @cython.boundscheck(False) # Turns off IndexError type warnings - e.g. a = [1, 2, 3]; a[5]
 @cython.wraparound(False) # Turns off Python a[-1] indexing - will segfault.
@@ -16,6 +32,9 @@ cpdef solve(np.ndarray[double, ndim=1] q,
             double b_v,
             double alpha,
             double beta,
+            double liaAmplitude,
+            double liaPhaseDelay,
+            double dTau,
             np.ndarray[double, ndim=1] SqueezingPulseArray,
             int startIndex,
             int NumTimeSteps ):
@@ -69,10 +88,21 @@ cpdef solve(np.ndarray[double, ndim=1] q,
     cdef float qh
     cdef float vK2
     cdef float qK2
+
+    M = dTau/dt
+    
+    I0 = q[0]
+    zw0_0 = calc_zw0_n(0, I0)
+
+    In = I0
     
     for n in range(startIndex, NumTimeSteps+startIndex):
+        zw0_n = calc_zw0_n(n, In, Omega0, dt)
+        phi_n = np.angle(zw0_n)
+        feedback = liaAmplitude*np.sin(2*phi_n + liaPhaseDelay)*q[n]
+        
         # stage 1 of 2-stage Runge Kutta
-        vK1 = (-(Gamma0 + deltaGamma*q[n]**2)*v[n] - SqueezingPulseArray[n]*Omega0**2*q[n] + (alpha*q[n])**3 - (beta*q[n])**5)*dt + b_v*(dwArray[n] + (dt**0.5))
+        vK1 = (-(Gamma0 + deltaGamma*q[n]**2)*v[n] - SqueezingPulseArray[n]*Omega0**2*q[n] + feedback + (alpha*q[n])**3 - (beta*q[n])**5)*dt + b_v*(dwArray[n] + (dt**0.5))
         qK1 = v[n]*dt
         
         vh = v[n] + vK1
@@ -85,6 +115,9 @@ cpdef solve(np.ndarray[double, ndim=1] q,
         # update
         v[n+1] = v[n] + 0.5*(vK1 + vK2)
         q[n+1] = q[n] + 0.5*(qK1 + qK2)
+
+        In = get_I_n_plus_1(In, n+1, M, Omega0, dt) # In+1 for next iteration
+
         
     return q, v
 

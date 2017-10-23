@@ -1,7 +1,6 @@
 cimport numpy as np
 cimport cython
 
-
 @cython.boundscheck(False) # Turns off IndexError type warnings - e.g. a = [1, 2, 3]; a[5]
 @cython.wraparound(False) # Turns off Python a[-1] indexing - will segfault.
 @cython.overflowcheck(False) # Check that no integer overflows occur with arithmetic operations
@@ -63,29 +62,9 @@ cpdef solve(np.ndarray[double, ndim=1] q,
     """
     #print(dt, Gamma0, deltaGamma, Omega0, b_v, alpha, beta)
     cdef int n
-    cdef float vK1
-    cdef float qK1
-    cdef float vh
-    cdef float qh
-    cdef float vK2
-    cdef float qK2
-    
     for n in range(startIndex, NumTimeSteps+startIndex):
-        # stage 1 of 2-stage Runge Kutta
-        vK1 = (-(Gamma0 + deltaGamma*q[n]**2)*v[n] - SqueezingPulseArray[n]*Omega0**2*q[n] + (alpha*q[n])**3 - (beta*q[n])**5)*dt + b_v*(dwArray[n] + (dt**0.5))
-        qK1 = v[n]*dt
-        
-        vh = v[n] + vK1
-        qh = q[n] + qK1
-
-        # stage 2 of 2-stage Runge Kutta
-        vK2 = (-(Gamma0 + deltaGamma*qh**2)*vh - SqueezingPulseArray[n]*Omega0**2*qh + (alpha*qh)**3 - (beta*qh)**5)*dt + b_v*(dwArray[n] - (dt**0.5))
-        qK2 = vh*dt
-
-        # update
-        v[n+1] = v[n] + 0.5*(vK1 + vK2)
-        q[n+1] = q[n] + 0.5*(qK1 + qK2)
-        
+        v[n+1] = v[n] + (-(Gamma0 + deltaGamma*q[n]**2)*v[n] - SqueezingPulseArray[n]*Omega0**2*q[n] + (alpha*q[n])**3 - (beta*q[n])**5)*dt + b_v*dwArray[n]
+        q[n+1] = q[n] + v[n]*dt
     return q, v
 
 

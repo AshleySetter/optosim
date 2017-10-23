@@ -1,7 +1,6 @@
 cimport numpy as np
 cimport cython
 
-
 @cython.boundscheck(False) # Turns off IndexError type warnings - e.g. a = [1, 2, 3]; a[5]
 @cython.wraparound(False) # Turns off Python a[-1] indexing - will segfault.
 @cython.overflowcheck(False) # Check that no integer overflows occur with arithmetic operations
