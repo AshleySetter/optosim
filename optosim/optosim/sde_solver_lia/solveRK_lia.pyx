@@ -125,16 +125,17 @@ cpdef solve(np.ndarray[double, ndim=1] q,
         phi_array.append(phi_n)
         DoubleFreqFeedback = DoubleFreqAmplitude*np.sin(2*phi_n + DoubleFreqPhaseDelay)
         SingleFreqFeedback = SingleFreqAmplitude*np.sin(phi_n + SingleFreqPhaseDelay)
+        S = np.random.choice([-1, 1]) # randomly choose -1 or 1 with 50% chance
 
         # stage 1 of 2-stage Runge Kutta
-        vK1 = (-(Gamma0 + deltaGamma*q[n]**2)*v[n] - (SqueezingPulseArray[n]*Omega0**2 - DoubleFreqFeedback - SingleFreqFeedback)*q[n] + (alpha*q[n])**3 - (beta*q[n])**5)*dt + b_v*(dwArray[n] + (dt**0.5))
+        vK1 = (-(Gamma0 + deltaGamma*q[n]**2)*v[n] - (SqueezingPulseArray[n]*Omega0**2 - DoubleFreqFeedback - SingleFreqFeedback)*q[n] + (alpha*q[n])**3 - (beta*q[n])**5)*dt + b_v*(dwArray[n] + S*(dt**0.5))
         qK1 = (v[n])*dt 
         
         vh = v[n] + vK1
         qh = q[n] + qK1
 
         # stage 2 of 2-stage Runge Kutta
-        vK2 = (-(Gamma0 + deltaGamma*qh**2)*vh - (SqueezingPulseArray[n]*Omega0**2 - DoubleFreqFeedback - SingleFreqFeedback)*qh + (alpha*qh)**3 - (beta*qh)**5)*dt + b_v*(dwArray[n] - (dt**0.5))
+        vK2 = (-(Gamma0 + deltaGamma*qh**2)*vh - (SqueezingPulseArray[n]*Omega0**2 - DoubleFreqFeedback - SingleFreqFeedback)*qh + (alpha*qh)**3 - (beta*qh)**5)*dt + b_v*(dwArray[n] - S*(dt**0.5))
         qK2 = (vh)*dt
 
         # update
