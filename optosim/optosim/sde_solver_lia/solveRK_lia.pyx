@@ -120,7 +120,7 @@ cpdef solve(np.ndarray[double, ndim=1] q,
         #zw0_n = np.trapz(integralTerm[n-M:n])
         
         #phi_n = np.angle(zw0_n)
-        phi_n = np.arctan2(q[n], v[n]/Omega0)
+        phi_n = np.arctan2(v[n]/Omega0, q[n])
         phi_array.append(phi_n)
         DoubleFreqFeedback = DoubleFreqAmplitude*np.sin(2*phi_n + DoubleFreqPhaseDelay)
         SingleFreqFeedback = SingleFreqAmplitude*np.sin(phi_n + SingleFreqPhaseDelay)
