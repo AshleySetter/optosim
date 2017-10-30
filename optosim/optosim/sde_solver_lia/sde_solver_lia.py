@@ -199,7 +199,6 @@ class sde_solver():
                                       float(self.SingleFreqAmplitude),
                                       float(self.SingleFreqPhaseDelay),
                                       float(self.liadTau),
-                                      float(self.TimeAfterWhichToApplyFeedback),
                                       SqueezingPulseArray=self.SqueezingPulseArray,
                                       startIndex=startIndex,
                                       NumTimeSteps=NumTimeSteps,
