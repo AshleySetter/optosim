@@ -1,23 +1,24 @@
-cimport numpy as np
 #import numpy as np
+cimport numpy as np
 cimport cython
+from libc.math cimport atan2, sin
 
-cpdef get_z_n(n, z):
-    cdef float z_n
-#    e = np.e
-    if n < 0:
-        z_n = 0
-    else:
-        z_n = z[n]
-    return z_n
+#cpdef get_z_n(n, z):
+#    cdef float z_n
+##    e = np.e
+#    if n < 0:
+#        z_n = 0
+#    else:
+#        z_n = z[n]
+#    return z_n
 
-cpdef get_I_n_plus_1(In, n, M, Omega0, dt, z, np):
-    In_p1 = In + get_z_n(n, z)*np.exp(-1j*Omega0*n*dt)*dt - get_z_n(n-M, z)*np.exp(-1j*Omega0*(n-M)*dt)*dt
-    return In_p1
-
-cpdef calc_zw0_n(n, In, Omega0, dt, np):
-    zw0_n = np.exp(1j*Omega0*n*dt)*(1/dt)*In
-    return zw0_n
+#cpdef get_I_n_plus_1(In, n, M, Omega0, dt, z, np):
+#    In_p1 = In + get_z_n(n, z)*np.exp(-1j*Omega0*n*dt)*dt - get_z_n(n-M, z)*np.exp(-1j*Omega0*(n-M)*dt)*dt
+#    return In_p1
+#
+#cpdef calc_zw0_n(n, In, Omega0, dt, np):
+#    zw0_n = np.exp(1j*Omega0*n*dt)*(1/dt)*In
+#    return zw0_n
   
 @cython.boundscheck(False) # Turns off IndexError type warnings - e.g. a = [1, 2, 3]; a[5]
 @cython.wraparound(False) # Turns off Python a[-1] indexing - will segfault.
@@ -93,17 +94,23 @@ cpdef solve(np.ndarray[double, ndim=1] q,
     cdef float qh
     cdef float vK2
     cdef float qK2
-
+    cdef int M
+    cdef float phi_n
+    cdef float DoubleFreqFeedback
+    cdef float SingleFreqFeedback
+    
+    
     M = int(dTau/dt)
     
-    I0 = q[0]
-    zw0_0 = calc_zw0_n(0, I0, Omega0, dt, np)
+#    I0 = q[0]
+#    zw0_0 = calc_zw0_n(0, I0, Omega0, dt, np)
 
-    In = I0
+#    In = I0
 
-    phi_array = []
+#    phi_array = []
     
     narray = range(startIndex, NumTimeSteps+startIndex)
+    S = np.random.choice([-1, 1], NumTimeSteps) # randomly choose -1 or 1 with 50% chance
     
     for n in narray:
         # Method 1 
@@ -120,30 +127,29 @@ cpdef solve(np.ndarray[double, ndim=1] q,
         #zw0_n = np.trapz(integralTerm[n-M:n])
         
         #phi_n = np.angle(zw0_n)
-        phi_n = np.arctan2(v[n]/Omega0, q[n])
-        phi_array.append(phi_n)
-        DoubleFreqFeedback = DoubleFreqAmplitude*np.sin(2*phi_n + DoubleFreqPhaseDelay)
-        SingleFreqFeedback = SingleFreqAmplitude*np.sin(phi_n + SingleFreqPhaseDelay)
-        S = np.random.choice([-1, 1]) # randomly choose -1 or 1 with 50% chance
+        phi_n = atan2(v[n]/Omega0, q[n])
+#        phi_array.append(phi_n)
+        DoubleFreqFeedback = DoubleFreqAmplitude*sin(2*phi_n + DoubleFreqPhaseDelay)
+        SingleFreqFeedback = SingleFreqAmplitude*sin(phi_n + SingleFreqPhaseDelay)
 
         # stage 1 of 2-stage Runge Kutta
-        vK1 = (-(Gamma0 + deltaGamma*q[n]**2)*v[n] - Omega0**2*(SqueezingPulseArray[n] + DoubleFreqFeedback + SingleFreqFeedback)*q[n] + (alpha*q[n])**3 - (beta*q[n])**5)*dt + b_v*(dwArray[n] + S*(dt**0.5))
+        vK1 = (-(Gamma0 + deltaGamma*q[n]**2)*v[n] - Omega0**2*(SqueezingPulseArray[n] + DoubleFreqFeedback + SingleFreqFeedback)*q[n] + (alpha*q[n])**3 - (beta*q[n])**5)*dt + b_v*(dwArray[n] + S[n]*(dt**0.5))
         qK1 = (v[n])*dt 
         
         vh = v[n] + vK1
         qh = q[n] + qK1
 
         # stage 2 of 2-stage Runge Kutta
-        vK2 = (-(Gamma0 + deltaGamma*qh**2)*vh - Omega0**2*(SqueezingPulseArray[n] + DoubleFreqFeedback + SingleFreqFeedback)*qh + (alpha*qh)**3 - (beta*qh)**5)*dt + b_v*(dwArray[n] - S*(dt**0.5))
+        vK2 = (-(Gamma0 + deltaGamma*qh**2)*vh - Omega0**2*(SqueezingPulseArray[n] + DoubleFreqFeedback + SingleFreqFeedback)*qh + (alpha*qh)**3 - (beta*qh)**5)*dt + b_v*(dwArray[n] - S[n]*(dt**0.5))
         qK2 = (vh)*dt
 
         # update
         v[n+1] = v[n] + 0.5*(vK1 + vK2)
         q[n+1] = q[n] + 0.5*(qK1 + qK2)
 
-        In = get_I_n_plus_1(In, n+1, M, Omega0, dt, q, np) # In+1 for next iteration
+#        In = get_I_n_plus_1(In, n+1, M, Omega0, dt, q, np) # In+1 for next iteration
 
         
-    return q, v, phi_array
+    return q, v
 
 

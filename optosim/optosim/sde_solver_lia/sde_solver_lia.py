@@ -184,7 +184,7 @@ class sde_solver():
         """
         if NumTimeSteps == None:
             NumTimeSteps = (len(self.tArray) - 1) - startIndex
-        self.q, self.v, self.phi_array = solve_cython(self.q,
+        self.q, self.v = solve_cython(self.q,
                                       self.v,
                                       float(self.dt),
                                       self.dwArray,
