@@ -1,4 +1,5 @@
 include requirements.txt
 include optosim/VERSION
 include LICENSE
-include optosim/sde_solver/solveRK.pyx
+include optosim/solve_cython/solveRK.c
+include optosim/solve_cython/solveRK.pyx

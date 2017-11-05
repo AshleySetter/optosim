@@ -2,7 +2,7 @@ from scipy.constants import Boltzmann
 import numpy as np
 import os
 if 'READTHEDOCS' not in os.environ:
-    from optosim.solveRK import solve as solver
+    from solveRK import solve as solve_cython
 from frange import frange
 
 class sde_solver():
@@ -24,12 +24,7 @@ class sde_solver():
     """
     def __init__(self, Omega0, Gamma0, deltaGamma, mass,
                  T0=300, q0=0, v0=0, alpha=0, beta=0,
-                 DoubleFreqAmplitude=0, DoubleFreqPhaseDelay=0,
-                 SingleFreqAmplitude=0, SingleFreqPhaseDelay=0,
-                 liadTau=0,                 
-                 TimeTuple=[0, 100e-6], dt=1e-9,
-                 TimeAfterWhichToApplyFeedback=0,
-                 seed=None):
+                 TimeTuple=[0, 100e-6], dt=1e-9, seed=None):
         """
         Initialises the sde_solver instance.
 
@@ -73,13 +68,6 @@ class sde_solver():
         self.T0 = T0
         self.alpha = alpha
         self.beta = beta
-        self.DoubleFreqAmplitude = DoubleFreqAmplitude
-        self.DoubleFreqPhaseDelay = DoubleFreqPhaseDelay
-        self.SingleFreqAmplitude = SingleFreqAmplitude
-        self.SingleFreqPhaseDelay = SingleFreqPhaseDelay
-        self.liadTau = liadTau
-        self.TimeAfterWhichToApplyFeedback = TimeAfterWhichToApplyFeedback
-        
         self.TimeTuple = TimeTuple
         self.b_v = np.sqrt(2*self.Gamma0*self.k_B*self.T0/self.mass) # a constant
         self.dt = dt
@@ -184,26 +172,19 @@ class sde_solver():
         """
         if NumTimeSteps == None:
             NumTimeSteps = (len(self.tArray) - 1) - startIndex
-        self.q, self.v = solver(self.q,
-                                self.v,
-                                float(self.dt),
-                                self.dwArray,
-                                float(self.Gamma0),
-                                float(self.deltaGamma),
-                                float(self.Omega0),
-                                float(self.b_v),
-                                float(self.alpha),
-                                float(self.beta),
-                                float(self.DoubleFreqAmplitude),
-                                float(self.DoubleFreqPhaseDelay),
-                                float(self.SingleFreqAmplitude),
-                                float(self.SingleFreqPhaseDelay),
-                                float(self.liadTau),
-                                SqueezingPulseArray=self.SqueezingPulseArray,
-                                startIndex=startIndex,
-                                NumTimeSteps=NumTimeSteps,
-                                mass = self.mass,
-        )
+        self.q, self.v = solve_cython(self.q,
+                                      self.v,
+                                      float(self.dt),
+                                      self.dwArray,
+                                      float(self.Gamma0),
+                                      float(self.deltaGamma),
+                                      float(self.Omega0),
+                                      float(self.b_v),
+                                      float(self.alpha),
+                                      float(self.beta),                                      
+                                      SqueezingPulseArray=self.SqueezingPulseArray,
+                                      startIndex=startIndex,
+                                      NumTimeSteps=NumTimeSteps)
         return self.q, self.v
 
 #def _a_v(q, v, Gamma0, Omega0, eta):

@@ -13,6 +13,5 @@ pytest-cov
 pytest-mpl
 numpydoc
 sphinx_rtd_theme
-Cython
 optoanalysis
 #

@@ -7,16 +7,7 @@ from setuptools.extension import Extension
 import pip
 pip.main(['install', '-r', 'requirements.txt']) # installs requirements from requirements.txt file
 import os
-try:
-    import numpy
-except ModuleNotFoundError:
-    raise Exception("Please install numpy and attempt re-installing. Try 'pip install numpy'")
-try:
-    from Cython.Build import cythonize
-    from Cython.Build import build_ext
-except ModuleNotFoundError:
-    raise Exception("Please install Cython and attempt re-installing. Try 'pip install Cython'")
-
+import numpy
     
 mypackage_root_dir = os.path.dirname(__file__)
 with open(os.path.join(mypackage_root_dir, 'requirements.txt')) as requirements_file:
@@ -25,10 +16,11 @@ with open(os.path.join(mypackage_root_dir, 'requirements.txt')) as requirements_
 with open(os.path.join(mypackage_root_dir, 'optosim/VERSION')) as version_file:
     version = version_file.read().strip()
 
-extensions = [Extension(
-    name="solveRK",
-    sources=["optosim/sde_solver/solveRK.pyx"],
-    include_dirs=[numpy.get_include()],
+extensions = [
+    Extension(
+        name="optosim.solveRK",
+        sources=["optosim/solve_cython/solveRK.c"],
+        include_dirs=[numpy.get_include()],
     )
 ]
 
@@ -43,6 +35,6 @@ setup(name='optosim',
       packages=['optosim',
                 'optosim.sde_solver',
       ],
-      ext_modules = cythonize(extensions),
+      ext_modules = extensions,
       install_requires=requirements,
 )
