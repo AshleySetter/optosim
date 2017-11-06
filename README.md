@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/105577176.svg)](https://zenodo.org/badge/latestdoi/105577176)
+
 # optosim
 Matterwave group simulation library.
 
