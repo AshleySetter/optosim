@@ -1,1 +1,1 @@
-from optosim.sde_solver import *
+from .sde_solver import *
