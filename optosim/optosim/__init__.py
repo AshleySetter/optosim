@@ -16,9 +16,13 @@ _mypackage_root_dir = os.path.dirname(__file__)
 _version_file = open(os.path.join(_mypackage_root_dir, 'VERSION'))
 __version__ = _version_file.read().strip()
 
-# import sub-modules
+# import cython extensions
 import optosim.solveRK
+import optosim.solveRK_kalman
+
+# import sub-modules
 import optosim.sde_solver
+import optosim.sde_solver_kalman
 
 # the following line imports all the functions from optosim.py
 from .optosim import *

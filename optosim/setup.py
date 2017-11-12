@@ -21,6 +21,11 @@ extensions = [
         name="optosim.solveRK",
         sources=["optosim/solve_cython/solveRK.c"],
         include_dirs=[numpy.get_include()],
+    ),
+    Extension(
+        name="optosim.solveRK_kalman",
+        sources=["optosim/solve_cython_kalman/solveRK.c"],
+        include_dirs=[numpy.get_include()],
     )
 ]
 
@@ -34,6 +39,7 @@ setup(name='optosim',
       include_package_data=True,
       packages=['optosim',
                 'optosim.sde_solver',
+                'optosim.sde_solver_kalman',                
       ],
       ext_modules = extensions,
       install_requires=requirements,
