@@ -168,19 +168,20 @@ cpdef solve(np.ndarray[double, ndim=1] q,
         #print(KalmanCoolingMultiplier)
         KalmanFeedback = KalmanCoolingMultiplier*q_estimate_array[n-1-KalmanCoolingIndexDelay]**2
         #print(KalmanFeedback)
-        if KalmanFeedback > 100:
+        if np.isnan(KalmanFeedback):
             KalmanFeedback = 0
+#        print(KalmanFeedback)
         KalmanFeedbackArray[n] = KalmanFeedback
         
         # stage 1 of 2-stage Runge Kutta
-        vK1 = (-(Gamma0 + deltaGamma*q[n]**2)*v[n] - Omega0**2*(SqueezingPulseArray[n] + DoubleFreqFeedback + SingleFreqFeedback + 0)*q[n] + (alpha*q[n])**3 - (beta*q[n])**5)*dt + b_v*(dwArray[n] + S[n]*(dt**0.5))
+        vK1 = (-(Gamma0 + deltaGamma*q[n]**2)*v[n] - Omega0**2*(SqueezingPulseArray[n] + DoubleFreqFeedback + SingleFreqFeedback + KalmanFeedback)*q[n] + (alpha*q[n])**3 - (beta*q[n])**5)*dt + b_v*(dwArray[n] + S[n]*(dt**0.5))
         qK1 = (v[n])*dt 
         
         vh = v[n] + vK1
         qh = q[n] + qK1
 
         # stage 2 of 2-stage Runge Kutta
-        vK2 = (-(Gamma0 + deltaGamma*qh**2)*vh - Omega0**2*(SqueezingPulseArray[n] + DoubleFreqFeedback + SingleFreqFeedback + 0)*qh + (alpha*qh)**3 - (beta*qh)**5)*dt + b_v*(dwArray[n] - S[n]*(dt**0.5))
+        vK2 = (-(Gamma0 + deltaGamma*qh**2)*vh - Omega0**2*(SqueezingPulseArray[n] + DoubleFreqFeedback + SingleFreqFeedback + KalmanFeedback)*qh + (alpha*qh)**3 - (beta*qh)**5)*dt + b_v*(dwArray[n] - S[n]*(dt**0.5))
         qK2 = (vh)*dt
 
         # update
