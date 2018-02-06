@@ -34,6 +34,7 @@ cpdef solve(np.ndarray[double, ndim=1] q,
             double b_v,
             double alpha,
             double beta,
+            double AmpCubicTerm,
             double DoubleFreqAmplitude,
             double DoubleFreqPhaseDelay,
             double SingleFreqAmplitude,
@@ -132,14 +133,14 @@ cpdef solve(np.ndarray[double, ndim=1] q,
         SingleFreqFeedback = SingleFreqAmplitude*sin(phi_n + SingleFreqPhaseDelay)
 
         # stage 1 of 2-stage Runge Kutta
-        vK1 = (-(Gamma0 + deltaGamma*q[n]**2)*v[n] - Omega0**2*(SqueezingPulseArray[n] + DoubleFreqFeedback + SingleFreqFeedback)*q[n] + (alpha*q[n])**3 - (beta*q[n])**5)*dt + b_v*(dwArray[n] + S[n]*(dt**0.5))
+        vK1 = (-(Gamma0 + deltaGamma*q[n]**2)*v[n] - Omega0**2*(SqueezingPulseArray[n] + DoubleFreqFeedback + SingleFreqFeedback + AmpCubicTerm*q[n]**2*v[n])*q[n] + SqueezingPulseArray[n]*(alpha*q[n])**3 - (beta*q[n])**5)*dt + b_v*(dwArray[n] + S[n]*(dt**0.5))
         qK1 = (v[n])*dt 
         
         vh = v[n] + vK1
         qh = q[n] + qK1
 
         # stage 2 of 2-stage Runge Kutta
-        vK2 = (-(Gamma0 + deltaGamma*qh**2)*vh - Omega0**2*(SqueezingPulseArray[n] + DoubleFreqFeedback + SingleFreqFeedback)*qh + (alpha*qh)**3 - (beta*qh)**5)*dt + b_v*(dwArray[n] - S[n]*(dt**0.5))
+        vK2 = (-(Gamma0 + deltaGamma*qh**2)*vh - Omega0**2*(SqueezingPulseArray[n] + DoubleFreqFeedback + SingleFreqFeedback + AmpCubicTerm*qh**2*vh)*qh + SqueezingPulseArray[n]*(alpha*qh)**3 - (beta*qh)**5)*dt + b_v*(dwArray[n] - S[n]*(dt**0.5))
         qK2 = (vh)*dt
 
         # update
