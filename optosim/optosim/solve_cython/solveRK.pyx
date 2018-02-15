@@ -85,22 +85,21 @@ cpdef solve(np.ndarray[double, ndim=1] q,
     v : ndarray
         array of velocities with time found from solving the SDE
     """
-    #print(dt, Gamma0, deltaGamma, Omega0, b_v, alpha, beta)
-    print(Gamma0,
-          deltaGamma,
-          Omega0,
-          b_v,
-          alpha,
-          beta,
-          DoubleFreqAmplitude,
-          DoubleFreqPhaseDelay,
-          SingleFreqAmplitude,
-          SingleFreqPhaseDelay,
-          dTau,
-          SqueezingPulseArray,
-          startIndex,
-          NumTimeSteps,
-          mass)
+#    print(Gamma0,
+#          deltaGamma,
+#          Omega0,
+#          b_v,
+#          alpha,
+#          beta,
+#          DoubleFreqAmplitude,
+#          DoubleFreqPhaseDelay,
+#          SingleFreqAmplitude,
+#          SingleFreqPhaseDelay,
+#          dTau,
+#          SqueezingPulseArray,
+#          startIndex,
+#          NumTimeSteps,
+#          mass)
     
     cdef int n
     cdef float vK1
