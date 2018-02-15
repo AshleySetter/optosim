@@ -34,7 +34,6 @@ cpdef solve(np.ndarray[double, ndim=1] q,
             double b_v,
             double alpha,
             double beta,
-            double AmpCubicTerm,
             double DoubleFreqAmplitude,
             double DoubleFreqPhaseDelay,
             double SingleFreqAmplitude,
@@ -87,6 +86,22 @@ cpdef solve(np.ndarray[double, ndim=1] q,
         array of velocities with time found from solving the SDE
     """
     #print(dt, Gamma0, deltaGamma, Omega0, b_v, alpha, beta)
+    print(Gamma0,
+          deltaGamma,
+          Omega0,
+          b_v,
+          alpha,
+          beta,
+          DoubleFreqAmplitude,
+          DoubleFreqPhaseDelay,
+          SingleFreqAmplitude,
+          SingleFreqPhaseDelay,
+          dTau,
+          SqueezingPulseArray,
+          startIndex,
+          NumTimeSteps,
+          mass)
+    
     cdef int n
     cdef float vK1
     cdef float qK1
@@ -98,7 +113,7 @@ cpdef solve(np.ndarray[double, ndim=1] q,
     cdef float phi_n
     cdef float DoubleFreqFeedback
     cdef float SingleFreqFeedback
-    
+    cdef float PowerModulation
     
     M = int(dTau/dt)
     
@@ -134,17 +149,18 @@ cpdef solve(np.ndarray[double, ndim=1] q,
 
         # stage 1 of 2-stage Runge Kutta
         PowerModulation = (SqueezingPulseArray[n] + DoubleFreqFeedback + SingleFreqFeedback)
-        
-        vK1 = ( -(Gamma0 + deltaGamma*q[n]**2)*v[n] + PowerModulation*(- Omega0**2**q[n] + (alpha*q[n])**3 - (beta*q[n])**5) )*dt + b_v*(dwArray[n] + S[n]*(dt**0.5))
+
+        vK1 = ( -(Gamma0 + deltaGamma*q[n]**2)*v[n] + PowerModulation*(-Omega0**2*q[n] + (alpha*q[n])**3 - (beta*q[n])**5) )*dt + b_v*(dwArray[n] + S[n]*(dt**0.5))
         qK1 = (v[n])*dt 
         
         vh = v[n] + vK1
         qh = q[n] + qK1
 
         # stage 2 of 2-stage Runge Kutta
-        vK2 = ( -(Gamma0 + deltaGamma*qh**2)*vh + PowerModulation*(- Omega0**2**qh + (alpha*qh)**3 - (beta*qh)**5) )*dt + b_v*(dwArray[n] - S[n]*(dt**0.5))
+        vK2 = ( -(Gamma0 + deltaGamma*qh**2)*vh + PowerModulation*(-Omega0**2*qh + (alpha*qh)**3 - (beta*qh)**5) )*dt + b_v*(dwArray[n] - S[n]*(dt**0.5))
         qK2 = (vh)*dt
 
+        
         # update
         v[n+1] = v[n] + 0.5*(vK1 + vK2)
         q[n+1] = q[n] + 0.5*(qK1 + qK2)
