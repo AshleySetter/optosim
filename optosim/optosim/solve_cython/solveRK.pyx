@@ -1,6 +1,7 @@
 import numpy as np
 cimport numpy as np
 cimport cython
+import sys
 from libc.math cimport atan2, sin
 
 #cpdef get_z_n(n, z):
@@ -29,7 +30,6 @@ cpdef solve(np.ndarray[double, ndim=1] q,
             double dt,
             np.ndarray[double, ndim=1] dwArray,
             double Gamma0,
-            double deltaGamma,
             double Omega0,
             double b_v,
             double alpha,
@@ -39,6 +39,7 @@ cpdef solve(np.ndarray[double, ndim=1] q,
             double SingleFreqAmplitude,
             double SingleFreqPhaseDelay,
             double dTau,
+            double feedback_delay_N_periods,
             np.ndarray[double, ndim=1] SqueezingPulseArray,
             int startIndex,
             int NumTimeSteps,
@@ -58,8 +59,7 @@ cpdef solve(np.ndarray[double, ndim=1] q,
         random values to use for Weiner process
     Gamma0 : float
         Enviromental damping parameter (angular frequency - radians/s) - appears as (-Gamma*v) term in the SDE
-    deltaGamma : float
-        damping due to other effects (e.g. feedback cooling) (radians/s) - appears as (-deltaGamma*q**2*v)*dt term in the SDE
+
     Omega0 : float
         Trapping frequency (angular frequency - radians/s)
     eta : float
@@ -86,7 +86,6 @@ cpdef solve(np.ndarray[double, ndim=1] q,
         array of velocities with time found from solving the SDE
     """
 #    print(Gamma0,
-#          deltaGamma,
 #          Omega0,
 #          b_v,
 #          alpha,
@@ -113,50 +112,52 @@ cpdef solve(np.ndarray[double, ndim=1] q,
     cdef float DoubleFreqFeedback
     cdef float SingleFreqFeedback
     cdef float PowerModulation
+    cdef int feedback_index
     
     M = int(dTau/dt)
+
+    freq0 = Omega0/(2*np.pi)
+    particle_period = 1/freq0
+    feedback_N = int(np.round((feedback_delay_N_periods*particle_period)/dt))
     
-#    I0 = q[0]
-#    zw0_0 = calc_zw0_n(0, I0, Omega0, dt, np)
+    progressbar_width = 50
+    relative_progress_for_update = 1/progressbar_width
+    timesteps_for_update = np.round(relative_progress_for_update*NumTimeSteps)
 
-#    In = I0
+    # setup progressbar
+    sys.stdout.write("[%s]" % (" " * progressbar_width))
+    sys.stdout.flush()
+    sys.stdout.write("\b" * (progressbar_width+1)) # return to start of line, after '['
 
-#    phi_array = []
     
     narray = range(startIndex, NumTimeSteps+startIndex)
     S = np.random.choice([-1, 1], NumTimeSteps) # randomly choose -1 or 1 with 50% chance
     
     for n in narray:
-        # Method 1 
-        #zw0_n = calc_zw0_n(n, In, Omega0, dt, np)
+        if not n % timesteps_for_update:
+            # update the progress bar
+            sys.stdout.write("=")
+            sys.stdout.flush()
 
-        # Method 2
-        #zw0_n = 0
-        #for n_tmp in range(n-M, n+1):
-        #    zw0_n += q[n_tmp]*np.exp(-1j*Omega0*(n_tmp)*dt)
-        #zw0_n *= np.exp(1j*Omega0*n*dt)/dt
-
-        # Method 3
-        #integralTerm = q[1:]*np.exp(-1j*Omega0*np.array(list(narray))*dt)
-        #zw0_n = np.trapz(integralTerm[n-M:n])
+        feedback_index = n-feedback_N
+        if feedback_index < 0:
+            feedback_index = 0
+        phi_n = atan2(v[feedback_index]/Omega0, q[feedback_index])
         
-        #phi_n = np.angle(zw0_n)
-        phi_n = atan2(v[n]/Omega0, q[n])
-#        phi_array.append(phi_n)
         DoubleFreqFeedback = DoubleFreqAmplitude*sin(2*phi_n + DoubleFreqPhaseDelay)
         SingleFreqFeedback = SingleFreqAmplitude*sin(phi_n + SingleFreqPhaseDelay)
 
         # stage 1 of 2-stage Runge Kutta
         PowerModulation = (SqueezingPulseArray[n] + DoubleFreqFeedback + SingleFreqFeedback)
 
-        vK1 = ( -(Gamma0 + deltaGamma*q[n]**2)*v[n] + PowerModulation*(-Omega0**2*q[n] + (alpha*q[n])**3 - (beta*q[n])**5) )*dt + b_v*(dwArray[n] + S[n]*(dt**0.5))
+        vK1 = ( -Gamma0*v[n] + PowerModulation*(-Omega0**2*q[n] + (alpha*q[n])**3 - (beta*q[n])**5) )*dt + b_v*(dwArray[n] + S[n]*(dt**0.5))
         qK1 = (v[n])*dt 
         
         vh = v[n] + vK1
         qh = q[n] + qK1
 
         # stage 2 of 2-stage Runge Kutta
-        vK2 = ( -(Gamma0 + deltaGamma*qh**2)*vh + PowerModulation*(-Omega0**2*qh + (alpha*qh)**3 - (beta*qh)**5) )*dt + b_v*(dwArray[n] - S[n]*(dt**0.5))
+        vK2 = ( -Gamma0*vh + PowerModulation*(-Omega0**2*qh + (alpha*qh)**3 - (beta*qh)**5) )*dt + b_v*(dwArray[n] - S[n]*(dt**0.5))
         qK2 = (vh)*dt
 
         

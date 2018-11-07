@@ -22,11 +22,12 @@ class sde_solver():
     η is the modulation depth of the cooling signal ???
     W(t) is the Wiener process
     """
-    def __init__(self, Omega0, Gamma0, deltaGamma, mass,
+    def __init__(self, Omega0, Gamma0, mass,
                  T0=300, q0=0, v0=0, alpha=0, beta=0,
                  DoubleFreqAmplitude=0, DoubleFreqPhaseDelay=0,
                  SingleFreqAmplitude=0, SingleFreqPhaseDelay=0,
-                 liadTau=0,                 
+                 liadTau=0,
+                 feedback_delay_N_periods=0,
                  TimeTuple=[0, 100e-6], dt=1e-9,
                  TimeAfterWhichToApplyFeedback=0,
                  seed=None):
@@ -39,8 +40,6 @@ class sde_solver():
             Trapping frequency
         Gamma0 : float
             Enviromental damping - in radians/s - appears as (-Gamma*v) term in the SDE
-        deltaGamma : float
-            damping due to other effects (e.g. feedback cooling) - in radians/s - appears as (-deltaGamma*q**2*v)*dt term in the SDE
         mass : float
             mass of nanoparticle (in Kg)
         T0 : float, optional
@@ -68,7 +67,6 @@ class sde_solver():
         self.v0 = v0
         self.Omega0 = Omega0
         self.Gamma0 = Gamma0
-        self.deltaGamma = deltaGamma
         self.mass = mass
         self.T0 = T0
         self.alpha = alpha
@@ -79,7 +77,7 @@ class sde_solver():
         self.SingleFreqPhaseDelay = SingleFreqPhaseDelay
         self.liadTau = liadTau
         self.TimeAfterWhichToApplyFeedback = TimeAfterWhichToApplyFeedback
-        
+        self.feedback_delay_N_periods = feedback_delay_N_periods
         self.TimeTuple = TimeTuple
         self.b_v = np.sqrt(2*self.Gamma0*self.k_B*self.T0/self.mass) # a constant
         self.dt = dt
@@ -189,7 +187,6 @@ class sde_solver():
                                 float(self.dt),
                                 self.dwArray,
                                 float(self.Gamma0),
-                                float(self.deltaGamma),
                                 float(self.Omega0),
                                 float(self.b_v),
                                 float(self.alpha),
@@ -199,6 +196,7 @@ class sde_solver():
                                 float(self.SingleFreqAmplitude),
                                 float(self.SingleFreqPhaseDelay),
                                 float(self.liadTau),
+                                self.feedback_delay_N_periods,
                                 SqueezingPulseArray=self.SqueezingPulseArray,
                                 startIndex=startIndex,
                                 NumTimeSteps=NumTimeSteps,
